@@ -46,9 +46,13 @@ var Stdout io.Writer = os.Stdout
 var Stderr io.Writer = os.Stderr
 
 // Ugh, see https://github.com/spf13/cobra/issues/836
-var usageTemplate = `Usage:{{if .Runnable}}
-  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
-  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+var usageTemplate = `Usage:
+{{- if .Runnable}}
+	{{.UseLine}}
+{{- end}}
+{{- if .HasAvailableSubCommands}}
+	{{.CommandPath}} [command]
+{{- end}}{{if gt (len .Aliases) 0}}
 
 Aliases:
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
@@ -62,8 +66,14 @@ Available API Commands:{{range .Commands}}{{if (not (or (eq .Name "help") (eq .N
 Generic Commands:{{range .Commands}}{{if (or (eq .Name "help") (eq .Name "get") (eq .Name "put") (eq .Name "post") (eq .Name "patch") (eq .Name "delete") (eq .Name "head") (eq .Name "options") (eq .Name "cert") (eq .Name "api") (eq .Name "links"))}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{else}}{{if .HasAvailableSubCommands}}
 
-Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+Available Commands:
+{{range .Commands -}}
+	{{- if (or .IsAvailableCommand (eq .Name "help")) -}}
+	{{.Name }}
+    [ {{.Short}} ]
+  {{end}}
+{{end}}
+{{end}}{{end}}{{if .HasAvailableLocalFlags -}}
 
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
