@@ -89,18 +89,13 @@ func (ac *AuthorizationCodeTokenSource) Token() (*oauth2.Token, error) {
 	verifier := base64.RawURLEncoding.EncodeToString(verifierBytes)
 	var url string
 
-	if ac.ClientSecret != "" {
-		url = fmt.Sprintf("%s?response_type=code&client_id=%s&redirect_uri=http://localhost:8484/&scope=%s", ac.AuthorizeURL, ac.ClientID, strings.Join(ac.Scopes, `%20`))
-	} else {
+	// Generate a code challenge. Only the challenge is sent when requesting a
+	// code which allows us to keep it secret for now.
+	shaBytes := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(shaBytes[:])
 
-		// Generate a code challenge. Only the challenge is sent when requesting a
-		// code which allows us to keep it secret for now.
-		shaBytes := sha256.Sum256([]byte(verifier))
-		challenge := base64.RawURLEncoding.EncodeToString(shaBytes[:])
-
-		// Generate a URL with the challenge to have the user log in.
-		url = fmt.Sprintf("%s?response_type=code&code_challenge=%s&code_challenge_method=S256&client_id=%s&redirect_uri=http://localhost:8484/&scope=%s", ac.AuthorizeURL, challenge, ac.ClientID, strings.Join(ac.Scopes, `%20`))
-	}
+	// Generate a URL with the challenge to have the user log in.
+	url = fmt.Sprintf("%s?response_type=code&code_challenge=%s&code_challenge_method=S256&client_id=%s&redirect_uri=http://localhost:8484/&scope=%s", ac.AuthorizeURL, challenge, ac.ClientID, strings.Join(ac.Scopes, `%20`))
 	if len(*ac.EndpointParams) > 0 {
 		url += "&" + ac.EndpointParams.Encode()
 	}
@@ -148,10 +143,9 @@ func (ac *AuthorizationCodeTokenSource) Token() (*oauth2.Token, error) {
 	s.Shutdown(context.Background())
 	var payload string
 
+	payload = fmt.Sprintf("grant_type=authorization_code&client_id=%s&code_verifier=%s&code=%s&redirect_uri=http://localhost:8484/", ac.ClientID, verifier, code)
 	if ac.ClientSecret != "" {
-		payload = fmt.Sprintf("grant_type=authorization_code&client_id=%s&client_secret=%s&code_verifier=%s&code=%s&redirect_uri=http://localhost:8484/", ac.ClientID, ac.ClientSecret, verifier, code)
-	} else {
-		payload = fmt.Sprintf("grant_type=authorization_code&client_id=%s&code_verifier=%s&code=%s&redirect_uri=http://localhost:8484/", ac.ClientID, verifier, code)
+		payload += fmt.Sprintf("&client_secret=%s", ac.ClientSecret)
 	}
 
 	return requestToken(ac.TokenURL, payload)
