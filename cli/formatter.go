@@ -344,7 +344,7 @@ func setTable(data []interface{}) (*[]byte, error) {
 			// Discover headers for repeating objects
 			// Iterate first instance of one of the repeating objects
 			if defineHeader {
-				for k, _ := range mapData {
+				for k := range mapData {
 					headerCells = append(headerCells, &simpletable.Cell{Align: simpletable.AlignCenter, Text: k})
 				}
 			}
